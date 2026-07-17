@@ -1,198 +1,86 @@
-const {
-    default: makeWASocket,
-    useMultiFileAuthState,
-    DisconnectReason,
-    fetchLatestBaileysVersion
-} = require("@whiskeysockets/baileys");
+// ==========================
+// CONEXÃO
+// ==========================
+sock.ev.on("connection.update", async (update) => {
 
-const { Boom } = require("@hapi/boom");
-const P = require("pino");
-const QRCodeTerminal = require("qrcode-terminal");
-const QRCode = require("qrcode");
-const fs = require("fs");
-const path = require("path");
+    const { connection, lastDisconnect, qr } = update;
 
-const startWebServer = require("./src/web/server");
+    // QR RECEBIDO
+    if (qr) {
 
-// Módulos
-const { handleAntiLink } = require("./src/antiLink");
-const { handleBadWords } = require("./src/antiBadWords");
+        console.clear();
 
-async function startBot() {
+        console.log("📱 Escaneie o QR Code abaixo:\n");
 
-    // Inicia o servidor Web
-   
-
-    const { state, saveCreds } = await useMultiFileAuthState("./auth");
-
-    const { version } = await fetchLatestBaileysVersion();
-
-    const sock = makeWASocket({
-        version,
-        auth: state,
-        logger: P({ level: "silent" }),
-        printQRInTerminal: false
-    });
-
-    // ==========================
-    // SALVA A SESSÃO
-    // ==========================
-    sock.ev.on("creds.update", saveCreds);
-
-    // ==========================
-    // BOAS-VINDAS
-    // ==========================
-    sock.ev.on("group-participants.update", async (event) => {
-
-        if (event.action !== "add") return;
-
-        for (const participant of event.participants) {
-
-            const jid = participant.phoneNumber || participant.id;
-
-            if (!jid) continue;
-
-            const numero = jid.split("@")[0];
-
-            try {
-
-                await sock.sendMessage(event.id, {
-
-                    text:
-`👋 Olá @${numero}!
-
-Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
-
-📜 Leia as regras usando:
-
-/regras
-
-🏆 Boa sorte no campeonato!`,
-
-                    mentions: [jid]
-
-                });
-
-            } catch (err) {
-
-                console.log("Erro ao enviar boas-vindas:");
-                console.error(err);
-
-            }
-
-        }
-
-    });
-
-    // ==========================
-    // MENSAGENS
-    // ==========================
-    sock.ev.on("messages.upsert", async ({ messages }) => {
+        QRCodeTerminal.generate(qr, {
+            small: true
+        });
 
         try {
 
-            const msg = messages[0];
+            await QRCode.toFile(
+                path.join(__dirname, "public", "qr.png"),
+                qr
+            );
 
-            if (!msg) return;
-            if (!msg.message) return;
-            if (msg.key.fromMe) return;
-
-            await handleAntiLink(sock, msg);
-            await handleBadWords(sock, msg);
+            console.log("✅ QR salvo em public/qr.png");
 
         } catch (err) {
 
-            console.log("Erro ao processar mensagem:");
+            console.log("Erro ao gerar QR PNG:");
             console.error(err);
 
         }
 
-    });
+    }
 
-    // ==========================
-    // CONEXÃO
-    // ==========================
-    sock.ev.on("connection.update", async (update) => {
+    // CONECTOU
+    if (connection === "open") {
 
-        const { connection, lastDisconnect, qr } = update;
+        console.clear();
 
-        // QR RECEBIDO
-        if (qr) {
+        console.log("=================================");
+        console.log("✅ MOZ STREAM BOT CONECTADO");
+        console.log("=================================");
 
-            console.clear();
+        const qrPath = path.join(__dirname, "public", "qr.png");
 
-            console.log("📱 Escaneie o QR Code abaixo:\n");
-
-            QRCodeTerminal.generate(qr, {
-                small: true
-            });
-
-            try {
-
-                await QRCode.toFile(
-                    path.join(__dirname, "public", "qr.png"),
-                    qr
-                );
-
-                console.log("✅ QR salvo em public/qr.png");
-
-            } catch (err) {
-
-                console.log("Erro ao gerar QR PNG:");
-                console.error(err);
-
-            }
-
+        if (fs.existsSync(qrPath)) {
+            fs.unlinkSync(qrPath);
         }
 
-        // CONECTOU
-        if (connection === "open") {
+    }
 
-            console.clear();
+    // DESCONECTOU
+    if (connection === "close") {
 
-            console.log("=================================");
-            console.log("✅ MOZ STREAM BOT CONECTADO");
-            console.log("=================================");
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
 
-            const qrPath = path.join(__dirname, "public", "qr.png");
+        console.log("=================================");
+        console.log("⚠️ CONEXÃO ENCERRADA");
+        console.log("Status Code:", statusCode);
+        console.dir(lastDisconnect, { depth: null });
+        console.log("=================================");
 
-            if (fs.existsSync(qrPath)) {
+        const shouldReconnect =
+            (lastDisconnect?.error instanceof Boom)
+                ? statusCode !== DisconnectReason.loggedOut
+                : true;
 
-                fs.unlinkSync(qrPath);
+        if (shouldReconnect) {
 
-            }
+            console.log("🔄 Reconectando em 5 segundos...");
 
-        }
-
-        // DESCONECTOU
-        if (connection === "close") {
-
-            const shouldReconnect =
-                (lastDisconnect?.error instanceof Boom)
-                    ? lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut
-                    : true;
-
-            console.log("⚠️ Conexão encerrada.");
-
-            if (shouldReconnect) {
-
-                console.log("🔄 Reconectando...");
+            setTimeout(() => {
                 startBot();
+            }, 5000);
 
-            } else {
+        } else {
 
-                console.log("❌ Sessão desconectada.");
-
-            }
+            console.log("❌ Sessão desconectada. Escaneie o QR novamente.");
 
         }
 
-    });
+    }
 
-}
-
-// Inicia o servidor Web apenas uma vez
-startWebServer();
-
-// Inicia o Bot
-startBot();
+});
