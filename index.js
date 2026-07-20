@@ -7,7 +7,7 @@ const {
     fetchLatestBaileysVersion
 } = require("@whiskeysockets/baileys");
 
-const { Boom } = require("@hapi/boom");
+
 const P = require("pino");
 const QRCodeTerminal = require("qrcode-terminal");
 const QRCode = require("qrcode");
@@ -131,13 +131,30 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
     // MENSAGENS
     // ==========================
 
-    sock.ev.on("messages.upsert", async (event) => {
+   sock.ev.on("messages.upsert", async ({ messages }) => {
 
-    console.log("=================================");
-    console.log("📩 EVENTO MESSAGES.UPSERT");
-    console.log("=================================");
+    try {
 
-    console.dir(event, { depth: 3 });
+        console.log("📩 Evento recebido");
+
+        const msg = messages[0];
+
+        if (!msg) return;
+        if (!msg.message) return;
+        if (msg.key.fromMe) return;
+
+        console.log("Mensagem recebida.");
+
+        await handleAntiLink(sock, msg);
+
+        await handleBadWords(sock, msg);
+
+    } catch (err) {
+
+        console.log("Erro messages.upsert");
+        console.error(err);
+
+    }
 
 });
 

@@ -17,6 +17,7 @@ function containsLink(text) {
 }
 
 async function handleAntiLink(sock, msg) {
+    console.log("AntiLink executado");
 
     try {
 
@@ -24,11 +25,21 @@ async function handleAntiLink(sock, msg) {
 
         const sender = msg.key.participant;
 
-        const text =
-            msg.message?.conversation ||
-            msg.message?.extendedTextMessage?.text ||
-            "";
+       const message =
+    msg.message?.ephemeralMessage?.message ||
+    msg.message;
 
+const text =
+    message?.conversation ||
+    message?.extendedTextMessage?.text ||
+    message?.imageMessage?.caption ||
+    message?.videoMessage?.caption ||
+    message?.documentMessage?.caption ||
+    "";
+    console.log("Texto recebido:", text);
+console.log("Mensagem completa:");
+console.dir(msg.message, { depth: null });
+    console.log("Texto recebido:", text);
         if (!containsLink(text)) return;
 
         let count = cache.get(sender) || 0;
