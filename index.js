@@ -26,7 +26,7 @@ const startWebServer = require("./src/web/server");
 const { handleAntiLink } = require("./src/antiLink");
 const { handleBadWords } = require("./src/antiBadWords");
 
-
+let reconnecting = false;
 async function startBot() {
 
 
@@ -204,7 +204,7 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
                 qr
             } = update;
 
-
+console.log("Estado:", connection);
 
 
             if(qr){
@@ -310,11 +310,11 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
 
 
 
-                console.log(
-                    "⚠️ Conexão fechada:",
-                    statusCode
-                );
-
+           console.log("=================================");
+console.log("Conexão:", connection);
+console.log("Status:", statusCode);
+console.dir(lastDisconnect, { depth: null });
+console.log("=================================");
 
 
                 const reconnect =
@@ -323,23 +323,21 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
 
 
 
-                if(reconnect){
+           if (reconnect && !reconnecting) {
 
+    reconnecting = true;
 
-                    console.log(
-                        "🔄 Reconectando..."
-                    );
+    console.log("🔄 Reconectando em 5 segundos...");
 
+    setTimeout(async () => {
 
-                    setTimeout(
-                        ()=>{
-                            startBot();
-                        },
-                        5000
-                    );
+        reconnecting = false;
 
+        await startBot();
 
-                }else{
+    }, 5000);
+
+}else{
 
 
                     console.log(
