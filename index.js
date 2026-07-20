@@ -1,6 +1,5 @@
 require("dotenv").config();
-console.log("🚀 Chamando startBot...");
-startBot();
+
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -347,4 +346,5 @@ startWebServer();
 
 
 // inicia bot
+
 startBot();
