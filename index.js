@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -12,49 +14,92 @@ const QRCode = require("qrcode");
 const fs = require("fs");
 const path = require("path");
 
+
+
+
+
+// Servidor Web
 const startWebServer = require("./src/web/server");
 
-// Módulos
+
+// Funções do bot
 const { handleAntiLink } = require("./src/antiLink");
 const { handleBadWords } = require("./src/antiBadWords");
 
+
 async function startBot() {
 
-    const { state, saveCreds } = await useMultiFileAuthState("./auth");
+
+   const { state, saveCreds } = await useMultiFileAuthState("./auth");
+
 
     const { version } = await fetchLatestBaileysVersion();
 
+
+
     const sock = makeWASocket({
+
         version,
+
         auth: state,
-        logger: P({ level: "silent" }),
+
+        logger: P({
+            level: "silent"
+        }),
+
         printQRInTerminal: false
+
     });
+    // Salva a sessão
+sock.ev.on("creds.update", async () => {
+    await saveCreds();
+    console.log("✅ Sessão salva.");
+});
+
+
+
+  
+
+
 
     // ==========================
-    // SALVA A SESSÃO
+    // BOAS VINDAS
     // ==========================
-    sock.ev.on("creds.update", saveCreds);
 
-    // ==========================
-    // BOAS-VINDAS
-    // ==========================
-    sock.ev.on("group-participants.update", async (event) => {
+    sock.ev.on(
+        "group-participants.update",
+        async (event) => {
 
-        if (event.action !== "add") return;
 
-        for (const participant of event.participants) {
+            if (event.action !== "add")
+                return;
 
-            const jid = participant.phoneNumber || participant.id;
 
-            if (!jid) continue;
 
-            const numero = jid.split("@")[0];
+            for (const participant of event.participants) {
 
-            try {
 
-                await sock.sendMessage(event.id, {
-                    text:
+                const jid =
+                    participant.phoneNumber ||
+                    participant.id;
+
+
+
+                if (!jid)
+                    continue;
+
+
+
+                const numero =
+                    jid.split("@")[0];
+
+
+
+                await sock.sendMessage(
+                    event.id,
+                    {
+
+                        text:
 `👋 Olá @${numero}!
 
 Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
@@ -63,146 +108,264 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
 
 /regras
 
-🏆 Boa sorte no campeonato!`,
-                    mentions: [jid]
-                });
+🏆 Boa sorte!`,
 
-            } catch (err) {
+                        mentions:[
+                            jid
+                        ]
 
-                console.log("Erro ao enviar boas-vindas:");
-                console.error(err);
+                    }
+                );
+
 
             }
 
-        }
 
-    });
+        }
+    );
+
+
+
 
     // ==========================
     // MENSAGENS
     // ==========================
-    sock.ev.on("messages.upsert", async ({ messages }) => {
 
-        try {
+    sock.ev.on(
+        "messages.upsert",
+        async ({messages})=>{
 
-            const msg = messages[0];
 
-            if (!msg) return;
-            if (!msg.message) return;
-            if (msg.key.fromMe) return;
+            try{
 
-            await handleAntiLink(sock, msg);
-            await handleBadWords(sock, msg);
 
-        } catch (err) {
+                const msg =
+                    messages[0];
 
-            console.log("Erro ao processar mensagem:");
-            console.error(err);
+
+
+                if(!msg)
+                    return;
+
+
+                if(!msg.message)
+                    return;
+
+
+                if(msg.key.fromMe)
+                    return;
+
+
+
+                await handleAntiLink(
+                    sock,
+                    msg
+                );
+
+
+                await handleBadWords(
+                    sock,
+                    msg
+                );
+
+
+
+            }catch(err){
+
+                console.log(
+                    "Erro mensagem:"
+                );
+
+                console.log(err);
+
+            }
+
 
         }
+    );
 
-    });
+
+
+
 
     // ==========================
     // CONEXÃO
     // ==========================
-    sock.ev.on("connection.update", async (update) => {
 
-        const { connection, lastDisconnect, qr } = update;
 
-        // ==========================
-        // QR RECEBIDO
-        // ==========================
-        if (qr) {
+    sock.ev.on(
+        "connection.update",
+        async(update)=>{
 
-            console.clear();
 
-            console.log("📱 Escaneie o QR Code abaixo:\n");
+            const {
+                connection,
+                lastDisconnect,
+                qr
+            } = update;
 
-            QRCodeTerminal.generate(qr, {
-                small: true
-            });
 
-            try {
 
-                await QRCode.toFile(
-                    path.join(__dirname, "public", "qr.png"),
-                    qr
+
+            if(qr){
+
+
+                console.log(
+                    "📱 Escaneie o QR:"
                 );
 
-                console.log("✅ QR salvo em public/qr.png");
 
-            } catch (err) {
+                QRCodeTerminal.generate(
+                    qr,
+                    {
+                        small:true
+                    }
+                );
 
-                console.log("Erro ao gerar QR PNG:");
-                console.error(err);
 
-            }
 
-        }
+                try{
 
-        // ==========================
-        // CONECTADO
-        // ==========================
-        if (connection === "open") {
 
-            console.clear();
+                    await QRCode.toFile(
 
-            console.log("=================================");
-            console.log("✅ MOZ STREAM BOT CONECTADO");
-            console.log("=================================");
+                        path.join(
+                            __dirname,
+                            "public",
+                            "qr.png"
+                        ),
 
-            const qrPath = path.join(__dirname, "public", "qr.png");
+                        qr
 
-            if (fs.existsSync(qrPath)) {
-                fs.unlinkSync(qrPath);
-            }
+                    );
 
-        }
 
-        // ==========================
-        // DESCONECTADO
-        // ==========================
-        if (connection === "close") {
+                    console.log(
+                        "✅ QR criado"
+                    );
 
-            const statusCode =
-                lastDisconnect?.error?.output?.statusCode;
 
-            console.log("=================================");
-            console.log("⚠️ CONEXÃO ENCERRADA");
-            console.log("Status Code:", statusCode);
-            console.dir(lastDisconnect, { depth: null });
-            console.log("=================================");
 
-            const shouldReconnect =
-                statusCode !== DisconnectReason.loggedOut;
+                }catch(err){
 
-            if (shouldReconnect) {
+                    console.log(err);
 
-                console.log("🔄 Reconectando em 5 segundos...");
+                }
 
-                setTimeout(() => {
-                    startBot();
-                }, 5000);
-
-            } else {
-
-                console.log("❌ Sessão desconectada. Escaneie o QR novamente.");
 
             }
 
-        }
 
-    });
+
+
+            if(connection==="open"){
+
+
+                console.log(
+                    "================================="
+                );
+
+                console.log(
+                    "✅ MOZ STREAM BOT CONECTADO"
+                );
+
+
+                console.log(
+                    "================================="
+                );
+
+
+
+                const qrPath =
+                    path.join(
+                        __dirname,
+                        "public",
+                        "qr.png"
+                    );
+
+
+
+                if(fs.existsSync(qrPath)){
+
+                    fs.unlinkSync(qrPath);
+
+                }
+
+
+            }
+
+
+
+
+
+            if(connection==="close"){
+
+
+
+                const statusCode =
+                    lastDisconnect
+                    ?.error
+                    ?.output
+                    ?.statusCode;
+
+
+
+                console.log(
+                    "⚠️ Conexão fechada:",
+                    statusCode
+                );
+
+
+
+                const reconnect =
+                    statusCode !==
+                    DisconnectReason.loggedOut;
+
+
+
+                if(reconnect){
+
+
+                    console.log(
+                        "🔄 Reconectando..."
+                    );
+
+
+                    setTimeout(
+                        ()=>{
+                            startBot();
+                        },
+                        5000
+                    );
+
+
+                }else{
+
+
+                    console.log(
+                        "❌ Sessão encerrada."
+                    );
+
+
+                }
+
+
+            }
+
+
+        }
+    );
+
+
 
 }
 
-// ==========================
-// INICIA SERVIDOR WEB
-// ==========================
+
+
+
+// inicia servidor web
 startWebServer();
 
-// ==========================
-// INICIA BOT
-// ==========================
+
+// inicia bot
 startBot();
