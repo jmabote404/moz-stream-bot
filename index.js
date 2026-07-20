@@ -1,5 +1,6 @@
 require("dotenv").config();
-
+console.log("🚀 Chamando startBot...");
+startBot();
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -29,8 +30,7 @@ const { handleBadWords } = require("./src/antiBadWords");
 let reconnecting = false;
 let botStarted = false;
 async function startBot() {
-async function startBot() {
-
+    console.log("🤖 Entrou no startBot");
     if (botStarted) {
         console.log("⚠️ Bot já iniciado, cancelando nova inicialização.");
         return;
@@ -338,7 +338,7 @@ console.log("=================================");
 
 
 }
-}
+
 
 
 
