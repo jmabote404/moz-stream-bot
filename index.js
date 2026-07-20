@@ -132,58 +132,35 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
     // ==========================
 
     sock.ev.on(
-        "messages.upsert",
-        async ({messages})=>{
+    "messages.upsert",
+    async ({ messages }) => {
 
+        console.log("📩 Evento messages.upsert recebido");
 
-            try{
+        try {
 
+            const msg = messages[0];
 
-                const msg =
-                    messages[0];
+            console.log("Mensagem:", JSON.stringify(msg, null, 2));
 
+            if (!msg) return;
+            if (!msg.message) return;
+            if (msg.key.fromMe) return;
 
+            console.log("✅ Processando mensagem...");
 
-                if(!msg)
-                    return;
+            await handleAntiLink(sock, msg);
+            await handleBadWords(sock, msg);
 
+        } catch (err) {
 
-                if(!msg.message)
-                    return;
-
-
-                if(msg.key.fromMe)
-                    return;
-
-
-
-                await handleAntiLink(
-                    sock,
-                    msg
-                );
-
-
-                await handleBadWords(
-                    sock,
-                    msg
-                );
-
-
-
-            }catch(err){
-
-                console.log(
-                    "Erro mensagem:"
-                );
-
-                console.log(err);
-
-            }
-
+            console.log("❌ Erro ao processar mensagem:");
+            console.error(err);
 
         }
-    );
 
+    }
+);
 
 
 
