@@ -21,10 +21,13 @@ async function handleAntiLink(sock, msg) {
 
     try {
 
-        if (!msg.key.remoteJid.endsWith("@g.us")) return;
+        if (!msg.key.remoteJid || !msg.key.remoteJid.endsWith("@g.us")) return;
 
-        const sender = msg.key.participant;
-
+        const sender =
+    msg.key.participant ||
+    msg.key.participantAlt ||
+    msg.key.remoteJid;
+console.log("Sender:", sender);
        const message =
     msg.message?.ephemeralMessage?.message ||
     msg.message;
@@ -36,9 +39,8 @@ const text =
     message?.videoMessage?.caption ||
     message?.documentMessage?.caption ||
     "";
-    console.log("Texto recebido:", text);
-console.log("Mensagem completa:");
-console.dir(msg.message, { depth: null });
+    
+console.log("Tipo de mensagem:", Object.keys(msg.message));
     console.log("Texto recebido:", text);
         if (!containsLink(text)) return;
 
