@@ -67,20 +67,22 @@ console.log("Tipo de mensagem:", Object.keys(msg.message));
         });
 
         // Segundo e terceiro link
-        if (count < 4) {
+       // Segundo e terceiro link
+console.log("⚠️ Entrou na advertência, contador:", count);
 
-            await sock.sendMessage(msg.key.remoteJid, {
-                text:
-`⚠️ @${sender.split("@")[0]}
+if (count < 4) {
 
-Você excedeu o limite diário de links.
+    await sock.sendMessage(msg.key.remoteJid, {
+        text:
+`⚠️ Usuário enviou link novamente.
 
-Advertência: ${count - 1}/3`,
-                mentions: [sender]
-            });
+Advertência: ${count - 1}/3`
+    });
 
-            return;
-        }
+    console.log("✅ Mensagem de advertência enviada");
+
+    return;
+}
 
         // Quarto link
         await sock.groupParticipantsUpdate(
