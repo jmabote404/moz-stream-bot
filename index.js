@@ -27,8 +27,16 @@ const { handleAntiLink } = require("./src/antiLink");
 const { handleBadWords } = require("./src/antiBadWords");
 
 let reconnecting = false;
+let botStarted = false;
+async function startBot() {
 async function startBot() {
 
+    if (botStarted) {
+        console.log("⚠️ Bot já iniciado, cancelando nova inicialização.");
+        return;
+    }
+
+    botStarted = true;
 
    const { state, saveCreds } = await useMultiFileAuthState("./auth");
 
