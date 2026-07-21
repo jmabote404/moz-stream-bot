@@ -44,19 +44,15 @@ async function startBot() {
 
 
 
-    const sock = makeWASocket({
+   const sock = makeWASocket({
+    version,
+    auth: state,
+    logger: P({ level: "silent" }),
+    printQRInTerminal: false,
 
-        version,
-
-        auth: state,
-
-        logger: P({
-            level: "silent"
-        }),
-
-        printQRInTerminal: false
-
-    });
+    markOnlineOnConnect: false,
+    syncFullHistory: false
+});
     // Salva a sessão
 sock.ev.on("creds.update", async () => {
     await saveCreds();
@@ -165,7 +161,12 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
 
 });
 
-
+sock.ev.on("messaging-history.set", () => {
+    console.log("📚 Histórico sincronizado");
+});
+sock.ev.on("contacts.upsert", () => {
+    console.log("👤 Contatos recebidos");
+});
 
 
     // ==========================
