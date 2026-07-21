@@ -72,11 +72,16 @@ Advertência: ${warns}/3`,
         }
 
         // Remove o membro
-        await sock.groupParticipantsUpdate(
-            msg.key.remoteJid,
-            [sender],
-            "remove"
-        );
+       const metadata = await sock.groupMetadata(msg.key.remoteJid);
+
+const membro = metadata.participants.find(
+    p => p.id === sender
+);
+
+if (membro?.admin) {
+    console.log("É administrador, ignorando.");
+    return;
+}
 
         await sock.sendMessage(msg.key.remoteJid, {
             text:

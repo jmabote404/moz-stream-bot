@@ -134,7 +134,7 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
     // MENSAGENS
     // ==========================
 
-   sock.ev.on("messages.upsert", async ({ messages }) => {
+ sock.ev.on("messages.upsert", async ({ messages }) => {
 
     try {
 
@@ -148,13 +148,17 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
 
         console.log("Mensagem recebida.");
 
+        console.log("➡️ Antes do AntiLink");
         await handleAntiLink(sock, msg);
+        console.log("✅ Depois do AntiLink");
 
+        console.log("➡️ Antes do AntiBadWords");
         await handleBadWords(sock, msg);
+        console.log("✅ Depois do AntiBadWords");
 
     } catch (err) {
 
-        console.log("Erro messages.upsert");
+        console.log("❌ Erro messages.upsert");
         console.error(err);
 
     }
