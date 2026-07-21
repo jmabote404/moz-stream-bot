@@ -136,29 +136,45 @@ Seja bem-vindo ao grupo oficial da *MOZ STREAM* 🎮
 
  sock.ev.on("messages.upsert", async ({ messages }) => {
 
+    console.log("📩 Evento recebido");
+
     try {
 
-        console.log("📩 Evento recebido");
-
         const msg = messages[0];
+        console.log("1");
 
-        if (!msg) return;
-        if (!msg.message) return;
-        if (msg.key.fromMe) return;
+        if (!msg) {
+            console.log("2 - sem mensagem");
+            return;
+        }
 
-        console.log("Mensagem recebida.");
+        console.log("3");
 
-        console.log("➡️ Antes do AntiLink");
+        if (!msg.message) {
+            console.log("4 - msg.message vazio");
+            console.dir(msg, { depth: null });
+            return;
+        }
+
+        console.log("5");
+
+        if (msg.key.fromMe) {
+            console.log("6 - enviada por mim");
+            return;
+        }
+
+        console.log("7 - vai executar AntiLink");
+
         await handleAntiLink(sock, msg);
-        console.log("✅ Depois do AntiLink");
 
-        console.log("➡️ Antes do AntiBadWords");
+        console.log("8 - AntiLink terminou");
+
         await handleBadWords(sock, msg);
-        console.log("✅ Depois do AntiBadWords");
+
+        console.log("9 - AntiBadWords terminou");
 
     } catch (err) {
 
-        console.log("❌ Erro messages.upsert");
         console.error(err);
 
     }
